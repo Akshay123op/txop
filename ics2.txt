@@ -1,0 +1,153 @@
+Problem Statement:- Implementation of S-AES
+
+Code:-
+
+plaintext = "1101011100101000"
+key = "0100101011110101"
+ciphertext = ""
+
+SBox = {}
+SBox["00"] = {"00" : "1000", "01" : "0100", "10" : "1010", "11" : "1011"}
+SBox["01"] = {"00" : "1101", "01" : "0001", "10" : "1000", "11" : "0101"}
+SBox["10"] = {"00" : "0110", "01" : "0010", "10" : "0000", "11" : "0011"}
+SBox["11"] = {"00" : "1100", "01" : "1110", "10" : "1111", "11" : "0111"}
+
+SBox_inv = {}
+SBox_inv["00"] = {"00" : "1010", "01" : "0101", "10" : "1001", "11" : "1011"}
+SBox_inv["01"] = {"00" : "0001", "01" : "0111", "10" : "1000", "11" : "1111"}
+SBox_inv["10"] = {"00" : "0110", "01" : "0000", "10" : "0010", "11" : "0011"}
+SBox_inv["11"] = {"00" : "1100", "01" : "0100", "10" : "1101", "11" : "1110"}
+
+mult = {}
+
+mult["0100"] = {"0000" : "0000", "0001" : "0100", "0010" : "1000", "0011" : "1100", \
+                "0100" : "0011", "0101" : "0111", "0110" : "1011", "0111" : "1111", \
+                "1000" : "0110", "1001" : "0010", "1010" : "1110", "1011" : "1010", \
+                "1100" : "0101", "1101" : "0001", "1110" : "1101", "1111" : "1001"}
+
+mult["0010"] = {"0000" : "0000", "0001" : "0010", "0010" : "0100", "0011" : "0110",\
+                "0100" : "1000", "0101" : "1010", "0110" : "1100", "0111" : "1110",\
+                "1000" : "0011", "1001" : "0001", "1010" : "0111", "1011" : "0101",\
+                "1100" : "1011", "1101" : "1001", "1110" : "1111", "1111" : "1101"}
+
+mult["1001"] = {"0000" : "0000", "0001" : "1001", "0010" : "0001", "0011" : "1000",\
+                "0100" : "0010", "0101" : "1011", "0110" : "0011", "0111" : "1010",\
+                "1000" : "0100", "1001" : "1101", "1010" : "0101", "1011" : "1100",\
+                "1100" : "0110", "1101" : "1111", "1110" : "0111", "1111" : "1110"}
+
+
+def XOR(a, b):
+    y = int(a, 2) ^ int(b, 2)
+    y = bin(y)[2 : ].zfill(len(a))
+    return y
+
+def rotateNibble(w):
+    return w[4 : ], w[ : 4]
+
+def subNibble(a, b):
+    return (SBox[a[ : 2]][a[2 : ]] + SBox[b[ : 2]][b[2 : ]])
+
+def generateKey(w0, w1, w2, w3, w4, w5):
+    global key1, key2, key3
+    key1 = w0 + w1
+    key2 = w2 + w3
+    key3 = w4 + w5
+    print("key1 : ", key1)
+    print("key2 : ", key2)
+    print("key3 : ", key3)
+
+def encrypt():
+
+    temp = XOR(plaintext, key1)
+    tempout = SBox[temp[ : 2]][temp[2 : 4]] + SBox[temp[4 : 6]][temp[6 : 8]] \
+    + SBox[temp[8 : 10]][temp[10 : 12]] + SBox[temp[12 : 14]][temp[14 : ]]
+    tempswap = tempout[ : 4] + tempout[12 : ] + tempout[8 : 12] + tempout[4 : 8]
+    
+    S_00 = XOR(tempswap[ : 4], mult["0100"][tempswap[4 : 8]])
+    S_01 = XOR(tempswap[8 : 12], mult["0100"][tempswap[12 : ]])
+    S_10 = XOR(tempswap[4 : 8], mult["0100"][tempswap[ : 4]])
+    S_11 = XOR(tempswap[12 : ], mult["0100"][tempswap[8 : 12]])
+    
+    r1_inv = S_00 + S_10 + S_01 + S_11
+    temp = XOR(r1_inv, key2)
+    
+    tempout = SBox[temp[ : 2]][temp[2 : 4]] + SBox[temp[4 : 6]][temp[6 : 8]] \
+    + SBox[temp[8 : 10]][temp[10 : 12]] + SBox[temp[12 : 14]][temp[14 : ]]
+    tempswap = tempout[ : 4] + tempout[12 : ] + tempout[8 : 12] + tempout[4 : 8]
+        
+    ciphertext = XOR(tempswap, key3)
+    return ciphertext
+
+def decrypt():
+    
+    temp = XOR(ciphertext, key3)
+    tempswap = temp[ : 4] + temp[12 : ] + temp[8 : 12] + temp[4 : 8]
+    tempout = SBox_inv[tempswap[ : 2]][tempswap[2 : 4]] + SBox_inv[tempswap[4 : 6]][tempswap[6 : 8]] \
+    + SBox_inv[tempswap[8 : 10]][tempswap[10 : 12]] + SBox_inv[tempswap[12 : 14]][tempswap[14 : ]]
+    
+    temp = XOR(tempout, key2)
+    
+    S_00 = XOR(mult["1001"][temp[ : 4]], mult["0010"][temp[4 : 8]])
+    S_01 = XOR(mult["1001"][temp[8 : 12]], mult["0010"][temp[12 : ]])
+    S_10 = XOR(mult["1001"][temp[4 : 8]], mult["0010"][temp[ : 4]])
+    S_11 = XOR(mult["1001"][temp[12 : ]], mult["0010"][temp[8 : 12]])
+    
+    Sout = S_00 + S_10 + S_01 + S_11
+    tempswap = Sout[ : 4] + Sout[12 : ] + Sout[8 : 12] + Sout[4 : 8]
+    tempout = SBox_inv[tempswap[ : 2]][tempswap[2 : 4]] + SBox_inv[tempswap[4 : 6]][tempswap[6 : 8]] \
+    + SBox_inv[tempswap[8 : 10]][tempswap[10 : 12]] + SBox_inv[tempswap[12 : 14]][tempswap[14 : ]]
+    plaintext = XOR(tempout, key1)
+    return plaintext
+
+
+def keyUtil():
+    w0 = key[ : 8]
+    w1 = key[8 : ]
+    a, b = rotateNibble(w1)
+    w2 = XOR(XOR(w0, "10000000"), subNibble(a, b))
+    w3 = XOR(w2, w1)
+    a, b = rotateNibble(w3)
+    w4 = XOR(XOR(w2, "00110000"), subNibble(a, b))
+    w5 = XOR(w4, w3)
+    generateKey(w0, w1, w2, w3, w4, w5)
+
+print("Original Plaintext : ", plaintext)
+print("Original Key : ", key)
+print()
+keyUtil()
+print()
+ciphertext = encrypt()
+print("Ciphertext after encryption : ", ciphertext)
+plaintext = decrypt()
+print("Plaintext after decryption : ", plaintext)
+
+
+*****************************************************************************
+
+Output :-
+
+
+Original Plaintext :  1101011100101000
+Original Key :  0100101011110101
+
+key1 :  0100101011110101
+key2 :  1101110100101000
+key3 :  1000011110101111
+
+Ciphertext after encryption :  0010010011101100
+Plaintext after decryption :  1101011100101000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
